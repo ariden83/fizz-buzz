@@ -1,0 +1,129 @@
+{
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "swagger": "2.0",
+  "info": {
+    "description": "the purpose of this application is to provide an application\nthat is using plain go code to define an API\n\nThis should demonstrate all the possible comment annotations\nthat are available to turn go code into a fully compliant swagger 2.0 spec\n\nGithub: https://github.com/ariden83/fizz-buzz\n\nthere are no TOS at this moment, use at your own risk we take no responsibility",
+    "title": "Fizz buzz api",
+    "contact": {
+      "name": "adrienparrochia",
+      "url": "http://www.citysearch-api.com",
+      "email": "adrienparrochia@gmail.com"
+    },
+    "license": {
+      "name": "MIT",
+      "url": "http://opensource.org/licenses/MIT"
+    },
+    "version": "1.0.0"
+  },
+  "host": "{{url}}",
+  "paths": {
+    "/fizz-buzz": {
+      "get": {
+        "description": "Get fizzBuzz filters by 5 parameters",
+        "consumes": [
+          "application/json",
+          "text/html"
+        ],
+        "produces": [
+          "application/json",
+          "text/html"
+        ],
+        "schemes": [
+          "http",
+          "https"
+        ],
+        "tags": [
+          "fizz-buzz"
+        ],
+        "operationId": "getFizzBUzzReq",
+        "responses": {
+          "200": {
+            "$ref": "#/responses/getFizzBuzzResp"
+          },
+          "401": {
+            "$ref": "#/responses/genericError"
+          },
+          "404": {
+            "$ref": "#/responses/genericError"
+          },
+          "412": {
+            "$ref": "#/responses/genericError"
+          },
+          "500": {
+            "$ref": "#/responses/genericError"
+          },
+          "default": {
+            "$ref": "#/responses/genericError"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "ErrorResponse": {
+      "description": "ErrorResponse structure of error response",
+      "type": "object",
+      "properties": {
+        "code": {
+          "description": "The status code",
+          "type": "integer",
+          "format": "int64",
+          "x-go-name": "Code"
+        },
+        "message": {
+          "description": "The error message",
+          "type": "string",
+          "x-go-name": "Message"
+        }
+      },
+      "x-go-package": "ariden/fizz-buzz/internal/endpoint"
+    },
+    "JsonResp": {
+      "type": "object",
+      "properties": {
+        "txt": {
+          "type": "string",
+          "x-go-name": "Txt"
+        }
+      },
+      "x-go-package": "ariden/fizz-buzz/internal/endpoint"
+    }
+  },
+  "responses": {
+    "genericError": {
+      "description": "GenericError Default response when we have an error",
+      "schema": {
+        "$ref": "#/definitions/ErrorResponse"
+      }
+    },
+    "getFizzBuzzResp": {
+      "description": "getFizzBuzzResp screen response",
+      "schema": {
+        "$ref": "#/definitions/JsonResp"
+      },
+      "headers": {
+        "Content-Length": {
+          "type": "string",
+          "description": "Content-Length\nin: header\nrequired: true"
+        },
+        "Content-Type": {
+          "type": "string",
+          "description": "Content-Type\nin: header\nrequired: true"
+        },
+        "X-Request-Id": {
+          "type": "string",
+          "description": "X-Request-Id\nin: header\nrequired: true"
+        }
+      }
+    }
+  }
+}
