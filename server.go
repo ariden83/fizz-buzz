@@ -94,8 +94,8 @@ func (s *Server) startSwaggerServer(stop chan error) {
 	s.swaggerServer = &http.Server{
 		Addr:           addr,
 		Handler:        n,
-		ReadTimeout:    time.Duration(s.conf.HealthzReadTimeout) * time.Second,
-		WriteTimeout:   time.Duration(s.conf.HealthzWriteTimeout) * time.Second,
+		ReadTimeout:    time.Duration(s.conf.Healthz.ReadTimeout) * time.Second,
+		WriteTimeout:   time.Duration(s.conf.Healthz.WriteTimeout) * time.Second,
 		IdleTimeout:    120 * time.Second,
 		MaxHeaderBytes: 1 << 12,
 	}
@@ -150,8 +150,8 @@ func (s *Server) startMetricsServer(stop chan error) {
 	s.metricsServer = &http.Server{
 		Addr:           addr,
 		Handler:        mux,
-		ReadTimeout:    time.Duration(s.conf.HealthzReadTimeout) * time.Second,
-		WriteTimeout:   time.Duration(s.conf.HealthzWriteTimeout) * time.Second,
+		ReadTimeout:    time.Duration(s.conf.Healthz.ReadTimeout) * time.Second,
+		WriteTimeout:   time.Duration(s.conf.Healthz.WriteTimeout) * time.Second,
 		IdleTimeout:    120 * time.Second,
 		MaxHeaderBytes: 1 << 12,
 	}

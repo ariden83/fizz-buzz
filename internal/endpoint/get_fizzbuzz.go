@@ -120,8 +120,8 @@ func (m *Endpoint) checkRequest(p *getFizzBuzzParams, req url.Values) error {
 		if err != nil {
 			return fmt.Errorf("invalid integer for p nbOne %s", req.Get("nbOne"))
 		}
-		if p.NBOne > m.conf.MaxNBParametersLimit {
-			return fmt.Errorf("maximum size exceeded for p NBOne %s, max %d", req.Get("nbOne"), m.conf.MaxNBParametersLimit)
+		if p.NBOne > m.conf.Parameters.MaxNb {
+			return fmt.Errorf("maximum size exceeded for p NBOne %s, max %d", req.Get("nbOne"), m.conf.Parameters.MaxNb)
 		}
 		if p.NBOne == 0 {
 			return fmt.Errorf("NBOne peter must be greater than zero")
@@ -133,8 +133,8 @@ func (m *Endpoint) checkRequest(p *getFizzBuzzParams, req url.Values) error {
 		if err != nil {
 			return fmt.Errorf("invalid integer for p NBTwo %s", req.Get("nbTwo"))
 		}
-		if p.NBTwo > m.conf.MaxNBParametersLimit {
-			return fmt.Errorf("maximum size exceeded for p NBTwo %s, max %d", req.Get("nbTwo"), m.conf.MaxNBParametersLimit)
+		if p.NBTwo > m.conf.Parameters.MaxNb {
+			return fmt.Errorf("maximum size exceeded for p NBTwo %s, max %d", req.Get("nbTwo"), m.conf.Parameters.MaxNb)
 		}
 		if p.NBTwo == 0 {
 			return fmt.Errorf("NBTwo peter must be greater than zero")
@@ -149,19 +149,21 @@ func (m *Endpoint) checkRequest(p *getFizzBuzzParams, req url.Values) error {
 		if p.Limit < 1 {
 			return fmt.Errorf("limit peter must be greater zero")
 		}
-		if p.Limit > m.conf.MaxNBParametersLimit {
-			return fmt.Errorf("maximum size exceeded for p limit %s, max %d", req.Get("limit"), m.conf.MaxNBParametersLimit)
+		if p.Limit > m.conf.Parameters.MaxLimit {
+			return fmt.Errorf("maximum size exceeded for p limit %s, max %d", req.Get("limit"), m.conf.Parameters.MaxLimit)
 		}
 	}
 
 	p.StrOne = req.Get("strOne")
-	if p.StrOne == "" && req.Get("nbOne") != "" {
-		return fmt.Errorf("p strOne must not be empty if nbOne is set")
+	if len(p.StrOne) > m.conf.Parameters.MaxStrChar {
+		return fmt.Errorf("maximum char exceeded %s, max %d", p.StrOne, m.conf.Parameters.MaxStrChar)
 	}
+
 	p.StrTwo = req.Get("strTwo")
-	if p.StrTwo == "" && req.Get("nbTwo") != "" {
-		return fmt.Errorf("p StrTwo must not be empty if nbTwo is set")
+	if len(p.StrTwo) > m.conf.Parameters.MaxStrChar {
+		return fmt.Errorf("maximum char exceeded %s, max %d", p.StrTwo, m.conf.Parameters.MaxStrChar)
 	}
+
 	return nil
 }
 
@@ -176,14 +178,19 @@ func convert(p getFizzBuzzParams) string {
 		return finalStr
 	}
 	for i := 1; i <= p.Limit; i++ {
-		var str string
+		var (
+			str        string
+			isMultiple bool
+		)
 		if p.NBOne > 0 && i%p.NBOne == 0 {
 			str = p.StrOne
+			isMultiple = true
 		}
 		if p.NBTwo > 0 && i%p.NBTwo == 0 {
 			str += p.StrTwo
+			isMultiple = true
 		}
-		if str == "" {
+		if !isMultiple {
 			str = strconv.Itoa(i)
 		}
 		finalStr += str + ","

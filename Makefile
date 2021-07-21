@@ -48,7 +48,7 @@ local:
 	@echo "> Launch local ..."
 	go fmt ./...
 	go build -o bin/main ./.
-	bash -c "swagger generate spec -o ./swagger/swagger-template.json -w ./."
+	# bash -c "swagger generate spec -o ./swagger/swagger-template.json -w ./."
 	-env=local exec ./bin/main
 
 local-test:

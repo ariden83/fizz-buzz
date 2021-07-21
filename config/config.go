@@ -33,6 +33,17 @@ type Metrics struct {
 	Host string `config:"metrics_host"`
 }
 
+type Parameters struct {
+	MaxLimit   int `config:"max_nb_parameters_limit"`
+	MaxStrChar int `config:"max_str_char_limit"`
+	MaxNb      int `config:"max_nb_limit"`
+}
+
+type Healthz struct {
+	ReadTimeout  time.Duration `config:"healthz_read_timeout"`
+	WriteTimeout time.Duration `config:"healthz_write_timeout"`
+}
+
 type Config struct {
 	Name      string
 	Port      int
@@ -40,13 +51,13 @@ type Config struct {
 	Host      string
 	PublicURL string `config:"public_url"`
 
-	CallHTTPTimeout     time.Duration `config:"call_http_timeout"`
-	APIReadTimeout      time.Duration `config:"api_read_timeout"`
-	APIWriteTimeout     time.Duration `config:"api_write_timeout"`
-	HealthzReadTimeout  time.Duration `config:"healthz_read_timeout"`
-	HealthzWriteTimeout time.Duration `config:"healthz_write_timeout"`
+	CallHTTPTimeout time.Duration `config:"call_http_timeout"`
+	APIReadTimeout  time.Duration `config:"api_read_timeout"`
+	APIWriteTimeout time.Duration `config:"api_write_timeout"`
 
-	MaxNBParametersLimit int `config:"max_nb_parameters_limit"`
+	Parameters
+
+	Healthz
 
 	Logger
 
@@ -61,12 +72,19 @@ func getDefaultConfig() *Config {
 		Host: "127.0.0.1",
 		Port: 8080,
 
-		APIReadTimeout:      4,
-		APIWriteTimeout:     100,
-		HealthzReadTimeout:  10,
-		HealthzWriteTimeout: 10,
+		APIReadTimeout:  4,
+		APIWriteTimeout: 100,
 
-		MaxNBParametersLimit: 100000,
+		Healthz: Healthz{
+			ReadTimeout:  10,
+			WriteTimeout: 10,
+		},
+
+		Parameters: Parameters{
+			MaxLimit:   100000,
+			MaxNb:      100,
+			MaxStrChar: 20,
+		},
 
 		PublicURL: "127.0.0.1:8080",
 

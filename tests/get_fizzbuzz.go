@@ -241,6 +241,101 @@ var getFizzBuzzTests = []Scenario{
 	{
 		`JSON: Should fail with "nbOne" and without "strOne" parameters`,
 		validPath,
+		200,
+		`
+		{
+			"Content-Type": "` + endpoint.ContentTypeJSON + `",
+			"X-Request-ID": "` + xRequestIDForTests + `"
+		}
+		`,
+		`{
+			"limit": "100",
+			"nbOne": "3"
+		}`,
+		func(t *testing.T, args ...interface{}) {
+			fizzBuzzResp := (*args[0].(*endpoint.JsonResp))
+			const waitingResp string = "1,2,,4,5,,7,8,,10,11,,13,14,,16,17,,19,20,,22,23,,25,26,,28,29,,31,32,,34,35,,37,38,,40,41,,43,44,,46,47,,49,50,,52,53,,55,56,,58,59,,61,62,,64,65,,67,68,,70,71,,73,74,,76,77,,79,80,,82,83,,85,86,,88,89,,91,92,,94,95,,97,98,,100"
+			if fizzBuzzResp.Txt != waitingResp {
+				t.Fatal("Bad response, have '", fizzBuzzResp.Txt, "' and we want '", waitingResp, "'")
+			}
+		},
+		func(t *testing.T, header http.Header) {},
+	},
+	{
+		`JSON: Should fail with "nbTwo" and without "strTwo" parameters`,
+		validPath,
+		200,
+		`
+		{
+			"Content-Type": "` + endpoint.ContentTypeJSON + `",
+			"X-Request-ID": "` + xRequestIDForTests + `"
+		}
+		`,
+		`{
+			"limit": "100",
+			"nbTwo": "3"
+		}`,
+		func(t *testing.T, args ...interface{}) {
+			fizzBuzzResp := (*args[0].(*endpoint.JsonResp))
+			const waitingResp string = "1,2,,4,5,,7,8,,10,11,,13,14,,16,17,,19,20,,22,23,,25,26,,28,29,,31,32,,34,35,,37,38,,40,41,,43,44,,46,47,,49,50,,52,53,,55,56,,58,59,,61,62,,64,65,,67,68,,70,71,,73,74,,76,77,,79,80,,82,83,,85,86,,88,89,,91,92,,94,95,,97,98,,100"
+			if fizzBuzzResp.Txt != waitingResp {
+				t.Fatal("Bad response, have '", fizzBuzzResp.Txt, "' and we want '", waitingResp, "'")
+			}
+		},
+		func(t *testing.T, header http.Header) {},
+	},
+	{
+		`JSON: Should fail with "nbOe", "nbTwo" and without "str" parameters`,
+		validPath,
+		200,
+		`
+		{
+			"Content-Type": "` + endpoint.ContentTypeJSON + `",
+			"X-Request-ID": "` + xRequestIDForTests + `"
+		}
+		`,
+		`{
+			"limit": "100",
+			"nbTwo": "3",
+			"nbOne": "5"
+		}`,
+		func(t *testing.T, args ...interface{}) {
+			fizzBuzzResp := (*args[0].(*endpoint.JsonResp))
+			const waitingResp string = "1,2,,4,,,7,8,,,11,,13,14,,16,17,,19,,,22,23,,,26,,28,29,,31,32,,34,,,37,38,,,41,,43,44,,46,47,,49,,,52,53,,,56,,58,59,,61,62,,64,,,67,68,,,71,,73,74,,76,77,,79,,,82,83,,,86,,88,89,,91,92,,94,,,97,98,,"
+			if fizzBuzzResp.Txt != waitingResp {
+				t.Fatal("Bad response, have '", fizzBuzzResp.Txt, "' and we want '", waitingResp, "'")
+			}
+		},
+		func(t *testing.T, header http.Header) {},
+	},
+	{
+		`JSON: Should fail with "nbOe", "nbTwo" and without "strOne" parameters`,
+		validPath,
+		200,
+		`
+		{
+			"Content-Type": "` + endpoint.ContentTypeJSON + `",
+			"X-Request-ID": "` + xRequestIDForTests + `"
+		}
+		`,
+		`{
+			"limit": "100",
+			"nbTwo": "3",
+			"nbOne": "5",
+			"strTwo": "buzz"
+		}`,
+		func(t *testing.T, args ...interface{}) {
+			fizzBuzzResp := (*args[0].(*endpoint.JsonResp))
+			const waitingResp string = "1,2,buzz,4,,buzz,7,8,buzz,,11,buzz,13,14,buzz,16,17,buzz,19,,buzz,22,23,buzz,,26,buzz,28,29,buzz,31,32,buzz,34,,buzz,37,38,buzz,,41,buzz,43,44,buzz,46,47,buzz,49,,buzz,52,53,buzz,,56,buzz,58,59,buzz,61,62,buzz,64,,buzz,67,68,buzz,,71,buzz,73,74,buzz,76,77,buzz,79,,buzz,82,83,buzz,,86,buzz,88,89,buzz,91,92,buzz,94,,buzz,97,98,buzz,"
+			if fizzBuzzResp.Txt != waitingResp {
+				t.Fatal("Bad response, have '", fizzBuzzResp.Txt, "' and we want '", waitingResp, "'")
+			}
+		},
+		func(t *testing.T, header http.Header) {},
+	},
+	{
+		`JSON: Should fail, "nbOne" exceeds the maximum authorized value`,
+		validPath,
 		412,
 		`
 		{
@@ -250,13 +345,50 @@ var getFizzBuzzTests = []Scenario{
 		`,
 		`{
 			"limit": "100",
+			"strOne": "fizz",
+			"nbOne": "101"
+		}`,
+		func(t *testing.T, args ...interface{}) {},
+		func(t *testing.T, header http.Header) {},
+	},
+	{
+		`JSON: Should fail, "nbTwo" exceeds the maximum authorized value`,
+		validPath,
+		412,
+		`
+		{
+			"Content-Type": "` + endpoint.ContentTypeJSON + `",
+			"X-Request-ID": "` + xRequestIDForTests + `"
+		}
+		`,
+		`{
+			"limit": "100",
+			"strTwo": "fizz",
+			"nbTwo": "101"
+		}`,
+		func(t *testing.T, args ...interface{}) {},
+		func(t *testing.T, header http.Header) {},
+	},
+	{
+		`JSON: Should fail, "strOne" exceeds the maximum authorized value`,
+		validPath,
+		412,
+		`
+		{
+			"Content-Type": "` + endpoint.ContentTypeJSON + `",
+			"X-Request-ID": "` + xRequestIDForTests + `"
+		}
+		`,
+		`{
+			"limit": "100",
+			"strOne": "fizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizz",
 			"nbOne": "1"
 		}`,
 		func(t *testing.T, args ...interface{}) {},
 		func(t *testing.T, header http.Header) {},
 	},
 	{
-		`JSON: Should fail with "nbTwo" and without "strTwo" parameters`,
+		`JSON: Should fail, "strTwo" exceeds the maximum authorized value`,
 		validPath,
 		412,
 		`
@@ -267,25 +399,8 @@ var getFizzBuzzTests = []Scenario{
 		`,
 		`{
 			"limit": "100",
+			"strTwo": "fizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizzfizz",
 			"nbTwo": "1"
-		}`,
-		func(t *testing.T, args ...interface{}) {},
-		func(t *testing.T, header http.Header) {},
-	},
-	{
-		`JSON: Should fail with only "nbOne", "nbTwo" and without "str" parameters`,
-		validPath,
-		412,
-		`
-		{
-			"Content-Type": "` + endpoint.ContentTypeJSON + `",
-			"X-Request-ID": "` + xRequestIDForTests + `"
-		}
-		`,
-		`{
-			"limit": "100",
-			"nbTwo": "1",
-			"nbOne": "2"
 		}`,
 		func(t *testing.T, args ...interface{}) {},
 		func(t *testing.T, header http.Header) {},
