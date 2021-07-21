@@ -29,6 +29,11 @@ github.com/heetch/confita/backend/flags
 github.com/juju/errors
 # github.com/juju/testing v0.0.0-20210324180055-18c50b0c2098
 ## explicit
+# github.com/karlseguin/ccache v2.0.3+incompatible
+## explicit
+github.com/karlseguin/ccache
+# github.com/karlseguin/expect v1.0.8
+## explicit
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/pkg/errors v0.9.1

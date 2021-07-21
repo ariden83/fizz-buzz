@@ -8,20 +8,35 @@ import (
 	"context"
 	"github.com/dimfeld/httptreemux"
 	"github.com/gofrs/uuid"
+	"github.com/karlseguin/ccache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/negroni"
 	"go.uber.org/zap"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 )
 
 type Endpoint struct {
-	log     *zap.Logger
-	metrics *metrics.Metrics
-	conf    *config.Config
-	server  *http.Server
+	log                  *zap.Logger
+	metrics              *metrics.Metrics
+	conf                 *config.Config
+	server               *http.Server
+	fetching             map[string]struct{}
+	cache                *ccache.Cache // cache for valid entries
+	negCache             *ccache.Cache // cache for valid entries
+	cacheSize            int
+	cacheTTL             int
+	cacheMaxSizeAccepted int
+	negCacheSize         int
+	negCacheTTL          int
+	queuedLock           sync.Mutex
+	queued               map[string]struct{}
+	fetchQueue           chan string
+	fetchLock            sync.Mutex
+	fetchCond            *sync.Cond
 }
 
 const (
@@ -37,11 +52,29 @@ type EndPointInput struct {
 }
 
 func New(input EndPointInput) *Endpoint {
-	return &Endpoint{
-		log:     input.Log.With(zap.String("component", "http")),
-		metrics: input.Metrics,
-		conf:    input.Config,
+
+	if input.Config.CacheSize < 10 {
+		input.Config.CacheSize = 10
 	}
+
+	e := &Endpoint{
+		log:                  input.Log.With(zap.String("component", "http")),
+		metrics:              input.Metrics,
+		conf:                 input.Config,
+		cache:                ccache.New(ccache.Configure().MaxSize(int64(input.Config.CacheSize)).ItemsToPrune(uint32(input.Config.CacheSize/20) + 1)),
+		negCache:             ccache.New(ccache.Configure().MaxSize(int64(input.Config.NegCacheSize)).ItemsToPrune(uint32(input.Config.NegCacheSize/20) + 1)),
+		negCacheTTL:          input.Config.NegCacheTTL,
+		negCacheSize:         input.Config.NegCacheSize,
+		cacheSize:            input.Config.NegCacheSize,
+		cacheTTL:             input.Config.NegCacheTTL,
+		cacheMaxSizeAccepted: input.Config.CacheMaxSizeAccepted,
+
+		fetchQueue: make(chan string, 1000),
+		fetching:   make(map[string]struct{}),
+		queued:     make(map[string]struct{}),
+	}
+	e.fetchCond = sync.NewCond(&e.fetchLock)
+	return e
 }
 
 func (s *Endpoint) RequestIDHeader(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {

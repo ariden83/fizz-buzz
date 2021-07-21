@@ -48,9 +48,9 @@ local:
 	@echo "> Launch local ..."
 	go fmt ./...
 	export GO111MODULE=on;
-	CGO_ENABLED=0 GOOS=linux go build -mod vendor -ldflags "-X main.Version=$GIT_TAG_NAME" -o bin/main ./.
-	bash -c "swagger generate spec -o ./swagger/swagger-template.json -w ./."
-	-env=local ./bin/main
+	CGO_ENABLED=0 GOOS=linux go build -mod vendor -ldflags "-X main.Version=$$GIT_TAG_NAME" -o bin/main ./.
+	# bash -c "swagger generate spec -o ./swagger/swagger-template.json -w ./."
+	-cli_level=INFO ./bin/main
 
 local-test:
 	@echo "> Launch local tests ..."
@@ -58,7 +58,7 @@ local-test:
 
 local-bench:
 	@echo "> Launch benchs ..."
-	go test -run=XXX -bench=. ./...  -v
+	-cli_level=ERROR go test -run=XXX -bench=. ./...  -v
 
 local-vendor:
 	@echo "> Regenerate vendor ..."
