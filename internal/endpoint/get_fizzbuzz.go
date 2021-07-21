@@ -97,16 +97,16 @@ type Resp string
 func (m *Endpoint) GetFizzBuzz(w http.ResponseWriter, r *http.Request, _ map[string]string) {
 	m.log.Info("Get fizz buzz")
 
-	p := getFizzBuzzParams{}
-	if err := m.checkRequest(&p, r.URL.Query()); err != nil {
+	params := getFizzBuzzParams{}
+	if err := m.checkRequest(&params, r.URL.Query()); err != nil {
 		m.fail(http.StatusPreconditionFailed, err, w, r)
 		return
 	}
 
-	defer m.IncMetrics(p)
-	c := make(chan string, 1)
-	go m.convert(c, p)
-	m.formatResp(w, r, c)
+	defer m.IncMetrics(params)
+	ch := make(chan string, 1)
+	go m.convert(ch, params)
+	m.formatResp(w, r, ch)
 }
 
 func (m *Endpoint) IncMetrics(p getFizzBuzzParams) {
