@@ -18,7 +18,7 @@ func TestApi(t *testing.T) {
 		Conf:       c,
 		DefaultURL: fmt.Sprintf("http://%s:%d", c.Host, c.Port),
 	}
-	time.Sleep(1500 * time.Millisecond)
+	time.Sleep(500 * time.Millisecond)
 	tts.StartFunctionnalTests(t)
 	t.Run("HealthCheck", tts.HealthCheckTest)
 	t.Run("Metrics", tts.MetricsTest)

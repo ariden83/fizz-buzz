@@ -39,13 +39,6 @@ type ScenarioWithBody struct {
 	expectedHeader testHeader
 }
 
-func pad(n int) string {
-	if n < 10 {
-		return fmt.Sprintf("0%d", n)
-	}
-	return fmt.Sprintf("%d", n)
-}
-
 // startFunctionnalTests start functionnal test when video respond
 func (tts *Tests) StartFunctionnalTests(t *testing.T) {
 	for {

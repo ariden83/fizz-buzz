@@ -104,9 +104,9 @@ func (m *Endpoint) GetFizzBuzz(w http.ResponseWriter, r *http.Request, _ map[str
 	}
 
 	defer m.IncMetrics(p)
-
-	resp := convert(p)
-	m.formatResp(w, r, resp)
+	c := make(chan string, 1)
+	go m.convert(c, p)
+	m.formatResp(w, r, c)
 }
 
 func (m *Endpoint) IncMetrics(p getFizzBuzzParams) {
@@ -172,10 +172,11 @@ func (m *Endpoint) checkRequest(p *getFizzBuzzParams, req url.Values) error {
 // all multiples of int1 are replaced by str1,
 // all multiples of int2 are replaced by str2,
 // all multiples of int1 and int2 are replaced by str1str2.
-func convert(p getFizzBuzzParams) string {
-	var finalStr string
+func (Endpoint) convert(ch chan string, p getFizzBuzzParams) {
+	defer close(ch)
 	if p.Limit == 0 {
-		return finalStr
+		ch <- ""
+		return
 	}
 	for i := 1; i <= p.Limit; i++ {
 		var (
@@ -193,16 +194,34 @@ func convert(p getFizzBuzzParams) string {
 		if !isMultiple {
 			str = strconv.Itoa(i)
 		}
-		finalStr += str + ","
+		if i < p.Limit {
+			str += ","
+		}
+		ch <- str
 	}
-	return finalStr[0 : len(finalStr)-1]
+	return
 }
 
-func (m *Endpoint) formatResp(w http.ResponseWriter, r *http.Request, response string) {
+func (m *Endpoint) formatResp(w http.ResponseWriter, r *http.Request, ch chan string) {
+	var (
+		finalJsonStr       = ""
+		isJsonWaiting bool = strings.Index(r.Header.Get("Content-Type"), ContentTypeJSON) != -1
+	)
+	for {
+		if result, ok := <-ch; ok {
+			if isJsonWaiting {
+				finalJsonStr += result
+				continue
+			}
+			fmt.Fprint(w, result)
+		} else {
+			break
+		}
+	}
 
-	if strings.Index(r.Header.Get("Content-Type"), ContentTypeJSON) != -1 {
+	if isJsonWaiting {
 		resp := JsonResp{
-			Txt: response,
+			Txt: finalJsonStr,
 		}
 		if js, err := json.Marshal(resp); err != nil {
 			m.log.Error("Fail to json.Marshal", zap.Error(err))
@@ -212,8 +231,7 @@ func (m *Endpoint) formatResp(w http.ResponseWriter, r *http.Request, response s
 			m.log.Error("Fail to Write response in http.ResponseWriter", zap.Error(err))
 			m.fail(http.StatusInternalServerError, err, w, r)
 		}
-		return
 	}
-	fmt.Fprint(w, response)
+
 	return
 }
