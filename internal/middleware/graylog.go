@@ -4,7 +4,7 @@ import (
 	"ariden/fizz-buzz/internal/zap-graylog/logger"
 	"context"
 	"errors"
-	"github.com/satori/go.uuid"
+	"github.com/gofrs/uuid"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"

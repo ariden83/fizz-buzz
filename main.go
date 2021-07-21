@@ -7,13 +7,13 @@
 // that are available to turn go code into a fully compliant swagger 2.0 spec
 //
 // Github: https://github.com/ariden83/fizz-buzz
+// Metrics: http://127.0.0.1:8081/metrics
 //
 // there are no TOS at this moment, use at your own risk we take no responsibility
 //
 //     Schemes: http, https
 //     Host: {{url}}
 //     Version: 1.0.0
-//     License: MIT http://opensource.org/licenses/MIT
 //     Contact: adrienparrochia<adrienparrochia@gmail.com> http://www.citysearch-api.com
 //
 //     Consumes:

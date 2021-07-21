@@ -47,9 +47,10 @@ run: build
 local:
 	@echo "> Launch local ..."
 	go fmt ./...
-	go build -o bin/main ./.
-	# bash -c "swagger generate spec -o ./swagger/swagger-template.json -w ./."
-	-env=local exec ./bin/main
+	export GO111MODULE=on;
+	CGO_ENABLED=0 GOOS=linux go build -mod vendor -ldflags "-X main.Version=$GIT_TAG_NAME" -o bin/main ./.
+	bash -c "swagger generate spec -o ./swagger/swagger-template.json -w ./."
+	-env=local ./bin/main
 
 local-test:
 	@echo "> Launch local tests ..."

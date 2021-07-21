@@ -11,16 +11,12 @@
   ],
   "swagger": "2.0",
   "info": {
-    "description": "the purpose of this application is to provide an application\nthat is using plain go code to define an API\n\nThis should demonstrate all the possible comment annotations\nthat are available to turn go code into a fully compliant swagger 2.0 spec\n\nGithub: https://github.com/ariden83/fizz-buzz\n\nthere are no TOS at this moment, use at your own risk we take no responsibility",
+    "description": "the purpose of this application is to provide an application\nthat is using plain go code to define an API\n\nThis should demonstrate all the possible comment annotations\nthat are available to turn go code into a fully compliant swagger 2.0 spec\n\nGithub: https://github.com/ariden83/fizz-buzz\nMetrics: http://127.0.0.1:8081/metrics\n\nthere are no TOS at this moment, use at your own risk we take no responsibility",
     "title": "Fizz buzz api",
     "contact": {
       "name": "adrienparrochia",
       "url": "http://www.citysearch-api.com",
       "email": "adrienparrochia@gmail.com"
-    },
-    "license": {
-      "name": "MIT",
-      "url": "http://opensource.org/licenses/MIT"
     },
     "version": "1.0.0"
   },
@@ -42,9 +38,63 @@
           "https"
         ],
         "tags": [
-          "fizz-buzz"
+          "fizzbuzz"
         ],
-        "operationId": "getFizzBUzzReq",
+        "operationId": "getFizzBuzzReq",
+        "parameters": [
+          {
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "NBOne",
+            "description": "Number one",
+            "name": "nbOne",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "NBTwo",
+            "description": "Number two",
+            "name": "nbTwo",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "format": "int64",
+            "x-go-name": "Limit",
+            "description": "limit",
+            "name": "limit",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "x-go-name": "StrOne",
+            "description": "String One",
+            "name": "strOne",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "x-go-name": "StrTwo",
+            "description": "String two",
+            "name": "strTwo",
+            "in": "query"
+          },
+          {
+            "type": "string",
+            "x-go-name": "ContentType",
+            "description": "Content-Type",
+            "name": "Content-Type",
+            "in": "header"
+          },
+          {
+            "type": "string",
+            "x-go-name": "XRequestID",
+            "description": "X-Request-Id",
+            "name": "X-Request-Id",
+            "in": "header"
+          }
+        ],
         "responses": {
           "200": {
             "$ref": "#/responses/getFizzBuzzResp"
@@ -113,15 +163,15 @@
       "headers": {
         "Content-Length": {
           "type": "string",
-          "description": "Content-Length\nin: header\nrequired: true"
+          "description": "Content-Length\nin: header"
         },
         "Content-Type": {
           "type": "string",
-          "description": "Content-Type\nin: header\nrequired: true"
+          "description": "Content-Type\nin: header"
         },
         "X-Request-Id": {
           "type": "string",
-          "description": "X-Request-Id\nin: header\nrequired: true"
+          "description": "X-Request-Id\nin: header"
         }
       }
     }

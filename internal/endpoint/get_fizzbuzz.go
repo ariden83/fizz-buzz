@@ -21,35 +21,29 @@ type JsonResp struct {
 type getFizzBuzzResp struct {
 	// Content-Length
 	// in: header
-	// required: true
 	ContentLength string `json:"Content-Length"`
 	// Content-Type
 	// in: header
-	// required: true
 	ContentType string `json:"Content-Type"`
 	// X-Request-Id
 	// in: header
-	// required: true
 	XRequestID string `json:"X-Request-Id"`
 	// corps of Response
 	// in: body
 	Body JsonResp `json:"body"`
 }
 
-// getFizzBuzzReq ps for method GET
+// getFizzBuzzReq Params for method GET
 //
 // swagger:parameters getFizzBuzzReq
 // nolint
 type getFizzBuzzReq struct {
 	// Content-Type
 	// in: header
-	// required: true
 	ContentType string `json:"Content-Type"`
 	// X-Request-Id
 	// in: header
-	// required: true
 	XRequestID string `json:"X-Request-Id"`
-	// ps
 	getFizzBuzzParams
 }
 
@@ -73,7 +67,7 @@ type getFizzBuzzParams struct {
 
 type Resp string
 
-// getFizzBuzz swagger:route GET /fizz-buzz fizz-buzz getFizzBUzzReq
+// getFizzBuzz swagger:route GET /fizz-buzz fizzbuzz getFizzBuzzReq
 //
 // Get fizzBuzz filters by 5 parameters
 //
