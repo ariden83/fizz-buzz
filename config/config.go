@@ -93,7 +93,7 @@ func getDefaultConfig() *Config {
 		},
 
 		Parameters: Parameters{
-			MaxLimit:   100000,
+			MaxLimit:   5000,
 			MaxNb:      100,
 			MaxStrChar: 20,
 		},

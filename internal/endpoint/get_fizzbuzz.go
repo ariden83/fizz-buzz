@@ -100,7 +100,6 @@ func (m *Endpoint) GetFizzBuzz(w http.ResponseWriter, r *http.Request, _ map[str
 	defer m.IncMetrics(params)
 
 	cacheKey := fmt.Sprintf("%v", params)
-
 	logCTX := m.log.With(zap.String("cacheKey", cacheKey))
 
 	resp, ignoreCache, cached := m.tryCache(cacheKey, cacheKey)
