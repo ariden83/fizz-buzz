@@ -38,7 +38,6 @@ ARG PROJECT_ROOT
 ARG GIT_TAG_NAME
 WORKDIR $PROJECT_ROOT
 COPY --from=swagger $PROJECT_ROOT/vendor ./vendor
-COPY --from=swagger $PROJECT_ROOT/pkg/api ./pkg/api
 COPY --from=swagger $PROJECT_ROOT/swagger/ ./swagger/
 COPY . .
 RUN go build -ldflags "-X main.Version=$GIT_TAG_NAME" -o bin/main ./.
