@@ -29,7 +29,6 @@ RUN echo $TZ > /etc/timezone
 
 RUN go test ./... -v
 RUN go test -run=XXX -bench=. ./...  -v
-#RUN cat test.log
 
 #Meant to build binary
 ARG GOBUILDER_IMAGE
@@ -40,12 +39,19 @@ WORKDIR $PROJECT_ROOT
 COPY --from=swagger $PROJECT_ROOT/vendor ./vendor
 COPY --from=swagger $PROJECT_ROOT/swagger/ ./swagger/
 COPY . .
-RUN go build -ldflags "-X main.Version=$GIT_TAG_NAME" -o bin/main ./.
+RUN CGO_ENABLED=0 GOOS=linux go build -mod vendor -ldflags "-X main.Version=$GIT_TAG_NAME" -o bin/main ./cmd/app
 
 #Meant for building the deployment container
 FROM alpine:3.10.1
 ARG PROJECT_ROOT
-WORKDIR /root
+
+WORKDIR /go
+
+RUN apk update && \
+    apk add ca-certificates && \
+    apk add --no-cache bash && \
+    rm -rf /var/cache/apk/*
+
 COPY --from=builder $PROJECT_ROOT/bin ./
 COPY --from=swagger $PROJECT_ROOT/swagger/ ./swagger/
 ENTRYPOINT ["./main"]
