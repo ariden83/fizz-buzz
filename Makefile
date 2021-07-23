@@ -1,7 +1,7 @@
 REPOSITORY ?= $(shell git config --get remote.origin.url| cut -d':' -f2 |rev |cut -c5-|rev)
 REGISTRY   ?= localhost:5000
 GIT_TAG_NAME ?= $(shell git describe --abbrev=1 --tags 2> /dev/null || git describe --always)
-IMAGE      ?= $(REGISTRY)/$(REPOSITORY):$(GIT_TAG_NAME)
+
 IMAGE      ?= $(REGISTRY)/fizz-buzz:$(GIT_TAG_NAME)
 
 DATE = $(shell date +'%Y%m%d%H%M%S')

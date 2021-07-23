@@ -26,18 +26,18 @@
 package main
 
 import (
-	"fmt"
-	"os/signal"
-	"time"
-
 	"ariden/fizz-buzz/config"
 	"ariden/fizz-buzz/internal/metrics"
 	"ariden/fizz-buzz/internal/zap-graylog/logger"
 	"context"
+	"fmt"
+	"os/signal"
+	"time"
+	// _ "github.com/go-swagger/go-swagger/cmd/swagger"
+	// _ "gopkg.in/alecthomas/gometalinter.v1"
 	"go.uber.org/zap"
 	l "log"
 	"os"
-	// _ "github.com/go-swagger/go-swagger/cmd/swagger"
 )
 
 var Version = "0.0.0"
