@@ -18,9 +18,11 @@
 //
 //     Consumes:
 //     - application/json
+//     - text/html
 //
 //     Produces:
 //     - application/json
+//     - text/html
 //
 // swagger:meta
 package main
