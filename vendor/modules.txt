@@ -104,6 +104,11 @@ github.com/josharian/intern
 github.com/juju/errors
 # github.com/juju/testing v0.0.0-20210324180055-18c50b0c2098
 ## explicit
+# github.com/karlseguin/ccache v2.0.3+incompatible
+## explicit
+github.com/karlseguin/ccache
+# github.com/karlseguin/expect v1.0.8
+## explicit
 # github.com/kr/pretty v0.2.1
 github.com/kr/pretty
 # github.com/kr/text v0.2.0

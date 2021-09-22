@@ -51,6 +51,12 @@ type Config struct {
 	Host      string
 	PublicURL string `config:"public_url"`
 
+	CacheSize            int
+	CacheTTL             int
+	CacheMaxSizeAccepted int
+	NegCacheSize         int
+	NegCacheTTL          int
+
 	CallHTTPTimeout time.Duration `config:"call_http_timeout"`
 	APIReadTimeout  time.Duration `config:"api_read_timeout"`
 	APIWriteTimeout time.Duration `config:"api_write_timeout"`
@@ -75,13 +81,19 @@ func getDefaultConfig() *Config {
 		APIReadTimeout:  4,
 		APIWriteTimeout: 100,
 
+		CacheSize:            5000,
+		CacheTTL:             60,
+		CacheMaxSizeAccepted: 60000,
+		NegCacheSize:         500,
+		NegCacheTTL:          30,
+
 		Healthz: Healthz{
 			ReadTimeout:  10,
 			WriteTimeout: 10,
 		},
 
 		Parameters: Parameters{
-			MaxLimit:   100000,
+			MaxLimit:   5000,
 			MaxNb:      100,
 			MaxStrChar: 20,
 		},

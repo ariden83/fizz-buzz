@@ -8,7 +8,10 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 )
+
+type Resp string
 
 type JsonResp struct {
 	Txt string `json:"txt"`
@@ -63,9 +66,8 @@ type getFizzBuzzParams struct {
 	// String two
 	// in: query
 	StrTwo string `json:"strTwo"`
+	isJSON bool
 }
-
-type Resp string
 
 // getFizzBuzz swagger:route GET /fizz-buzz fizzbuzz getFizzBuzzReq
 //
@@ -89,74 +91,202 @@ type Resp string
 //        412: genericError
 //        500: genericError
 func (m *Endpoint) GetFizzBuzz(w http.ResponseWriter, r *http.Request, _ map[string]string) {
-	m.log.Info("Get fizz buzz")
-
 	params := getFizzBuzzParams{}
-	if err := m.checkRequest(&params, r.URL.Query()); err != nil {
+	if err := m.checkRequest(&params, r); err != nil {
 		m.fail(http.StatusPreconditionFailed, err, w, r)
 		return
 	}
 
 	defer m.IncMetrics(params)
+
+	cacheKey := fmt.Sprintf("%v", params)
+	logCTX := m.log.With(zap.String("cacheKey", cacheKey))
+
+	resp, ignoreCache, cached := m.tryCache(cacheKey, cacheKey)
+	if ignoreCache {
+		logCTX.Info("ignore cache")
+		ch := make(chan string, 1)
+		go m.convert(ch, params)
+		m.formatResp(w, r, params, ch)
+		return
+
+	} else if cached {
+		logCTX.Info("use cache")
+
+		if _, err := w.Write(resp); err != nil {
+			m.log.Error("Fail to Write response in http.ResponseWriter", zap.Error(err))
+			m.fail(http.StatusInternalServerError, err, w, r)
+		}
+
+		return
+	}
+
+	m.fetchLock.Lock()
+	_, fetching := m.fetching[cacheKey]
+	if !fetching {
+		logCTX.Info("not using cache")
+		m.fetching[cacheKey] = struct{}{}
+		m.fetchLock.Unlock()
+
+		resp := m.cacheResponse(params, cacheKey)
+
+		m.endFetch(cacheKey)
+
+		if _, err := w.Write(resp); err != nil {
+			m.log.Error("Fail to Write response in http.ResponseWriter", zap.Error(err))
+			m.fail(http.StatusInternalServerError, err, w, r)
+		}
+		return
+	}
+	m.fetchLock.Unlock()
+
+	// wait for the other fetcher ...
+	m.fetchLock.Lock()
+	for {
+		m.fetchCond.Wait()
+		_, ok := m.fetching[cacheKey]
+		if !ok {
+			break
+		}
+	}
+	m.fetchLock.Unlock()
+
+	resp, _, cached = m.tryCache(cacheKey, cacheKey)
+	if cached {
+		if _, err := w.Write([]byte(resp)); err != nil {
+			m.log.Error("Fail to Write response in http.ResponseWriter", zap.Error(err))
+			m.fail(http.StatusInternalServerError, err, w, r)
+		}
+		return
+	}
+
 	ch := make(chan string, 1)
 	go m.convert(ch, params)
-	m.formatResp(w, r, ch)
+	m.formatResp(w, r, params, ch)
+}
+
+// fetch done, remove the key
+func (m *Endpoint) endFetch(key string) {
+	m.fetchLock.Lock()
+	delete(m.fetching, key)
+	m.fetchLock.Unlock()
+	m.fetchCond.Broadcast()
+}
+
+func (m *Endpoint) cacheResponse(p getFizzBuzzParams, cacheKey string) []byte {
+	ch := make(chan string, 1)
+	go m.convert(ch, p)
+	resp := m.formatEntireStringResp(ch, p.isJSON)
+
+	if len(resp) == 0 || len(resp) > m.cacheMaxSizeAccepted {
+		m.negCache.Set(cacheKey, &negCacheEntry{resp, len(resp) > m.cacheMaxSizeAccepted}, time.Duration(m.negCacheTTL)*time.Second)
+	} else {
+		m.cache.Set(cacheKey, resp, time.Duration(m.cacheTTL)*time.Second)
+		m.negCache.Delete(cacheKey)
+	}
+	return resp
+}
+
+type negCacheEntry struct {
+	resp        []byte
+	ignoreCache bool
+}
+
+func (m *Endpoint) tryCache(cacheKey, str string) ([]byte, bool, bool) {
+	item := m.cache.Get(cacheKey)
+	if item != nil {
+		if item.Expired() {
+			m.enqueueFetch(cacheKey, str)
+		}
+		vs := item.Value().([]byte)
+		return vs, false, true
+	}
+
+	item = m.negCache.Get(cacheKey)
+	if item != nil {
+		ne := item.Value().(*negCacheEntry)
+		if item.Expired() {
+			m.negCache.Delete(cacheKey)
+		}
+		return ne.resp, ne.ignoreCache, true
+	}
+	return []byte(""), false, false
+}
+
+func (m *Endpoint) enqueueFetch(key, str string) {
+	m.queuedLock.Lock()
+	_, ok := m.queued[key]
+	if !ok {
+		select {
+		case m.fetchQueue <- str:
+			m.queued[key] = struct{}{}
+		default:
+			//log.Printf("full")
+		}
+	}
+	m.queuedLock.Unlock()
 }
 
 func (m *Endpoint) IncMetrics(p getFizzBuzzParams) {
 	m.metrics.ApiParamsCounter.WithLabelValues(strconv.Itoa(p.Limit), strconv.Itoa(p.NBOne), strconv.Itoa(p.NBTwo), p.StrOne, p.StrTwo).Inc()
 }
 
-func (m *Endpoint) checkRequest(p *getFizzBuzzParams, req url.Values) error {
-	var err error
-	if req.Get("nbOne") != "" {
-		p.NBOne, err = strconv.Atoi(req.Get("nbOne"))
+func (m *Endpoint) checkRequest(p *getFizzBuzzParams, r *http.Request) error {
+	var (
+		err error
+		q   url.Values = r.URL.Query()
+	)
+
+	if q.Get("nbOne") != "" {
+		p.NBOne, err = strconv.Atoi(q.Get("nbOne"))
 		if err != nil {
-			return fmt.Errorf("invalid integer for p nbOne %s", req.Get("nbOne"))
+			return fmt.Errorf("invalid integer for p nbOne %s", q.Get("nbOne"))
 		}
 		if p.NBOne > m.conf.Parameters.MaxNb {
-			return fmt.Errorf("maximum size exceeded for p NBOne %s, max %d", req.Get("nbOne"), m.conf.Parameters.MaxNb)
+			return fmt.Errorf("maximum size exceeded for p NBOne %s, max %d", q.Get("nbOne"), m.conf.Parameters.MaxNb)
 		}
 		if p.NBOne == 0 {
 			return fmt.Errorf("NBOne peter must be greater than zero")
 		}
 	}
 
-	if req.Get("nbTwo") != "" {
-		p.NBTwo, err = strconv.Atoi(req.Get("nbTwo"))
+	if q.Get("nbTwo") != "" {
+		p.NBTwo, err = strconv.Atoi(q.Get("nbTwo"))
 		if err != nil {
-			return fmt.Errorf("invalid integer for p NBTwo %s", req.Get("nbTwo"))
+			return fmt.Errorf("invalid integer for p NBTwo %s", q.Get("nbTwo"))
 		}
 		if p.NBTwo > m.conf.Parameters.MaxNb {
-			return fmt.Errorf("maximum size exceeded for p NBTwo %s, max %d", req.Get("nbTwo"), m.conf.Parameters.MaxNb)
+			return fmt.Errorf("maximum size exceeded for p NBTwo %s, max %d", q.Get("nbTwo"), m.conf.Parameters.MaxNb)
 		}
 		if p.NBTwo == 0 {
 			return fmt.Errorf("NBTwo peter must be greater than zero")
 		}
 	}
 
-	if req.Get("limit") != "" {
-		p.Limit, err = strconv.Atoi(req.Get("limit"))
+	if q.Get("limit") != "" {
+		p.Limit, err = strconv.Atoi(q.Get("limit"))
 		if err != nil {
-			return fmt.Errorf("invalid integer for p limit %s", req.Get("limit"))
+			return fmt.Errorf("invalid integer for p limit %s", q.Get("limit"))
 		}
 		if p.Limit < 1 {
 			return fmt.Errorf("limit peter must be greater zero")
 		}
 		if p.Limit > m.conf.Parameters.MaxLimit {
-			return fmt.Errorf("maximum size exceeded for p limit %s, max %d", req.Get("limit"), m.conf.Parameters.MaxLimit)
+			return fmt.Errorf("maximum size exceeded for p limit %s, max %d", q.Get("limit"), m.conf.Parameters.MaxLimit)
 		}
 	}
 
-	p.StrOne = req.Get("strOne")
+	p.StrOne = q.Get("strOne")
 	if len(p.StrOne) > m.conf.Parameters.MaxStrChar {
 		return fmt.Errorf("maximum char exceeded %s, max %d", p.StrOne, m.conf.Parameters.MaxStrChar)
 	}
 
-	p.StrTwo = req.Get("strTwo")
+	p.StrTwo = q.Get("strTwo")
 	if len(p.StrTwo) > m.conf.Parameters.MaxStrChar {
 		return fmt.Errorf("maximum char exceeded %s, max %d", p.StrTwo, m.conf.Parameters.MaxStrChar)
 	}
+
+	p.isJSON = strings.Index(r.Header.Get("Content-Type"), ContentTypeJSON) != -1
 
 	return nil
 }
@@ -196,14 +326,11 @@ func (Endpoint) convert(ch chan string, p getFizzBuzzParams) {
 	return
 }
 
-func (m *Endpoint) formatResp(w http.ResponseWriter, r *http.Request, ch chan string) {
-	var (
-		finalJsonStr       = ""
-		isJsonWaiting bool = strings.Index(r.Header.Get("Content-Type"), ContentTypeJSON) != -1
-	)
+func (m *Endpoint) formatResp(w http.ResponseWriter, r *http.Request, p getFizzBuzzParams, ch chan string) {
+	var finalJsonStr string = ""
 	for {
 		if result, ok := <-ch; ok {
-			if isJsonWaiting {
+			if p.isJSON {
 				finalJsonStr += result
 				continue
 			}
@@ -213,7 +340,7 @@ func (m *Endpoint) formatResp(w http.ResponseWriter, r *http.Request, ch chan st
 		}
 	}
 
-	if isJsonWaiting {
+	if p.isJSON {
 		resp := JsonResp{
 			Txt: finalJsonStr,
 		}
@@ -228,4 +355,25 @@ func (m *Endpoint) formatResp(w http.ResponseWriter, r *http.Request, ch chan st
 	}
 
 	return
+}
+
+func (m *Endpoint) formatEntireStringResp(ch chan string, isJson bool) []byte {
+	var finalJsonStr string = ""
+	for {
+		if result, ok := <-ch; ok {
+			finalJsonStr += result
+		} else {
+			break
+		}
+	}
+
+	if isJson {
+		resp := JsonResp{
+			Txt: finalJsonStr,
+		}
+		js, _ := json.Marshal(resp)
+		return js
+	}
+
+	return []byte(finalJsonStr)
 }
