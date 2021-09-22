@@ -1,14 +1,14 @@
 package endpoint
 
 import (
-	"ariden/fizz-buzz/config"
-	"ariden/fizz-buzz/internal/metrics"
-	middle "ariden/fizz-buzz/internal/middleware"
-	"ariden/fizz-buzz/internal/zap-graylog/logger"
+	"github.com/ariden83/fizz-buzz/config"
+	"github.com/ariden83/fizz-buzz/internal/metrics"
+	middle "github.com/ariden83/fizz-buzz/internal/middleware"
+	"github.com/ariden83/fizz-buzz/internal/zap-graylog/logger"
 	"context"
 	"github.com/dimfeld/httptreemux"
 	"github.com/gofrs/uuid"
-	"github.com/karlseguin/ccache"
+	"github.com/ariden83/fizz-buzz/internal/xcache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/negroni"
