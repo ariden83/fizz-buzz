@@ -98,133 +98,30 @@ func (m *Endpoint) GetFizzBuzz(w http.ResponseWriter, r *http.Request, _ map[str
 	}
 
 	defer m.IncMetrics(params)
-
-	cacheKey := fmt.Sprintf("%v", params)
-	logCTX := m.log.With(zap.String("cacheKey", cacheKey))
-
-	resp, ignoreCache, cached := m.tryCache(cacheKey, cacheKey)
-	if ignoreCache {
-		logCTX.Info("ignore cache")
-		ch := make(chan string, 1)
-		go m.convert(ch, params)
-		m.formatResp(w, r, params, ch)
-		return
-
-	} else if cached {
-		logCTX.Info("use cache")
-
+	if m.cache != nil {
+		cacheKey := fmt.Sprintf("%v", params)
+		resp := m.cache.Fetch(cacheKey, func() []byte {
+			ch := make(chan string, 1)
+			go m.convert(ch, p)
+			return m.formatEntireStringResp(ch, p.isJSON)
+		})
+		
 		if _, err := w.Write(resp); err != nil {
 			m.log.Error("Fail to Write response in http.ResponseWriter", zap.Error(err))
 			m.fail(http.StatusInternalServerError, err, w, r)
 		}
-
-		return
 	}
-
-	m.fetchLock.Lock()
-	_, fetching := m.fetching[cacheKey]
-	if !fetching {
-		logCTX.Info("not using cache")
-		m.fetching[cacheKey] = struct{}{}
-		m.fetchLock.Unlock()
-
-		resp := m.cacheResponse(params, cacheKey)
-
-		m.endFetch(cacheKey)
-
-		if _, err := w.Write(resp); err != nil {
-			m.log.Error("Fail to Write response in http.ResponseWriter", zap.Error(err))
-			m.fail(http.StatusInternalServerError, err, w, r)
-		}
-		return
-	}
-	m.fetchLock.Unlock()
-
-	// wait for the other fetcher ...
-	m.fetchLock.Lock()
-	for {
-		m.fetchCond.Wait()
-		_, ok := m.fetching[cacheKey]
-		if !ok {
-			break
-		}
-	}
-	m.fetchLock.Unlock()
-
-	resp, _, cached = m.tryCache(cacheKey, cacheKey)
-	if cached {
-		if _, err := w.Write([]byte(resp)); err != nil {
-			m.log.Error("Fail to Write response in http.ResponseWriter", zap.Error(err))
-			m.fail(http.StatusInternalServerError, err, w, r)
-		}
-		return
-	}
-
+	
 	ch := make(chan string, 1)
 	go m.convert(ch, params)
 	m.formatResp(w, r, params, ch)
 }
 
-// fetch done, remove the key
-func (m *Endpoint) endFetch(key string) {
-	m.fetchLock.Lock()
-	delete(m.fetching, key)
-	m.fetchLock.Unlock()
-	m.fetchCond.Broadcast()
-}
 
-func (m *Endpoint) cacheResponse(p getFizzBuzzParams, cacheKey string) []byte {
+func (m *Endpoint) generateResponse (w http.ResponseWriter, r *http.Request, p getFizzBuzzParams) {
 	ch := make(chan string, 1)
-	go m.convert(ch, p)
-	resp := m.formatEntireStringResp(ch, p.isJSON)
-
-	if len(resp) == 0 || len(resp) > m.cacheMaxSizeAccepted {
-		m.negCache.Set(cacheKey, &negCacheEntry{resp, len(resp) > m.cacheMaxSizeAccepted}, time.Duration(m.negCacheTTL)*time.Second)
-	} else {
-		m.cache.Set(cacheKey, resp, time.Duration(m.cacheTTL)*time.Second)
-		m.negCache.Delete(cacheKey)
-	}
-	return resp
-}
-
-type negCacheEntry struct {
-	resp        []byte
-	ignoreCache bool
-}
-
-func (m *Endpoint) tryCache(cacheKey, str string) ([]byte, bool, bool) {
-	item := m.cache.Get(cacheKey)
-	if item != nil {
-		if item.Expired() {
-			m.enqueueFetch(cacheKey, str)
-		}
-		vs := item.Value().([]byte)
-		return vs, false, true
-	}
-
-	item = m.negCache.Get(cacheKey)
-	if item != nil {
-		ne := item.Value().(*negCacheEntry)
-		if item.Expired() {
-			m.negCache.Delete(cacheKey)
-		}
-		return ne.resp, ne.ignoreCache, true
-	}
-	return []byte(""), false, false
-}
-
-func (m *Endpoint) enqueueFetch(key, str string) {
-	m.queuedLock.Lock()
-	_, ok := m.queued[key]
-	if !ok {
-		select {
-		case m.fetchQueue <- str:
-			m.queued[key] = struct{}{}
-		default:
-			//log.Printf("full")
-		}
-	}
-	m.queuedLock.Unlock()
+	go m.convert(ch, params)
+	m.formatResp(w, r, params, ch)
 }
 
 func (m *Endpoint) IncMetrics(p getFizzBuzzParams) {
