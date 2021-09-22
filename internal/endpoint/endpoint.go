@@ -25,13 +25,7 @@ type Endpoint struct {
 	conf                 *config.Config
 	server               *http.Server
 	fetching             map[string]struct{}
-	cache                *ccache.Cache // cache for valid entries
-	negCache             *ccache.Cache // cache for valid entries
-	cacheSize            int
-	cacheTTL             int
-	cacheMaxSizeAccepted int
-	negCacheSize         int
-	negCacheTTL          int
+	cache                *xcache.Cache // cache for valid entries
 	queuedLock           sync.Mutex
 	queued               map[string]struct{}
 	fetchQueue           chan string
@@ -61,20 +55,31 @@ func New(input EndPointInput) *Endpoint {
 		log:                  input.Log.With(zap.String("component", "http")),
 		metrics:              input.Metrics,
 		conf:                 input.Config,
-		cache:                ccache.New(ccache.Configure().MaxSize(int64(input.Config.CacheSize)).ItemsToPrune(uint32(input.Config.CacheSize/20) + 1)),
-		negCache:             ccache.New(ccache.Configure().MaxSize(int64(input.Config.NegCacheSize)).ItemsToPrune(uint32(input.Config.NegCacheSize/20) + 1)),
-		negCacheTTL:          input.Config.NegCacheTTL,
-		negCacheSize:         input.Config.NegCacheSize,
-		cacheSize:            input.Config.NegCacheSize,
-		cacheTTL:             input.Config.NegCacheTTL,
-		cacheMaxSizeAccepted: input.Config.CacheMaxSizeAccepted,
-
 		fetchQueue: make(chan string, 1000),
 		fetching:   make(map[string]struct{}),
 		queued:     make(map[string]struct{}),
 	}
 	e.fetchCond = sync.NewCond(&e.fetchLock)
+	
+	
 	return e
+}
+
+func WithXCache() Option {
+	return func(s *Endpoint) {
+		var err error
+		s.cache, err = xcache.New(
+			xcache.WithSize(int32(s.conf.CacheSize)), 
+			xcache.WithTTL(time.Duration(c.CacheTTL) * time.Second),
+			xcache.WithNegSize(int32(c.NegCacheSize)), 
+			xcache.WithNegTTL(time.Duration(c.NegCacheTTL) * time.Second),
+			xcache.WithStale(true), 
+			xcache.WithPruneSize(int32(c.CacheSize/20)+1))
+		
+		if err != nil {
+			s.log.Error("fail to init xcache", zap.Error(err))
+		}
+	}
 }
 
 func (s *Endpoint) RequestIDHeader(w http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
