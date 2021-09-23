@@ -1,11 +1,11 @@
 package main
 
 import (
-	"ariden/fizz-buzz/benches"
-	"ariden/fizz-buzz/config"
-	httpEndpoint "ariden/fizz-buzz/internal/endpoint"
-	"ariden/fizz-buzz/internal/metrics"
-	"ariden/fizz-buzz/internal/zap-graylog/logger"
+	"github.com/ariden83/fizz-buzz/benches"
+	"github.com/ariden83/fizz-buzz/config"
+	httpEndpoint "github.com/ariden83/fizz-buzz/internal/endpoint"
+	"github.com/ariden83/fizz-buzz/internal/metrics"
+	"github.com/ariden83/fizz-buzz/internal/zap-graylog/logger"
 	"fmt"
 	"go.uber.org/zap"
 	"testing"
