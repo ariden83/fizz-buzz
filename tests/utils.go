@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"ariden/fizz-buzz/config"
+	"github.com/ariden83/fizz-buzz/config"
 	"encoding/json"
 	"fmt"
 	"github.com/pkg/errors"
