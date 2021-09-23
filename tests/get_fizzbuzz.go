@@ -1,8 +1,8 @@
 package tests
 
 import (
-	"ariden/fizz-buzz/internal/catcher"
-	"ariden/fizz-buzz/internal/endpoint"
+	"github.com/ariden83/fizz-buzz/internal/catcher"
+	"github.com/ariden83/fizz-buzz/internal/endpoint"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
