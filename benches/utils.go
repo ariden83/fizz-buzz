@@ -1,7 +1,7 @@
 package benches
 
 import (
-	"ariden/fizz-buzz/config"
+	"github.com/ariden83/fizz-buzz/config"
 	"github.com/urfave/negroni"
 	"net/http"
 	"testing"
