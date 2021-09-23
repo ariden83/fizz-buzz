@@ -1,7 +1,7 @@
 package metrics
 
 import (
-	"ariden/fizz-buzz/config"
+	"github.com/ariden83/fizz-buzz/config"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promauto"
 	"go.uber.org/zap"
