@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"regexp"
 
-	"ariden/fizz-buzz/config"
+	"github.com/ariden83/fizz-buzz/config"
 	httpEndpoint "ariden/fizz-buzz/internal/endpoint"
-	"ariden/fizz-buzz/internal/metrics"
+	"github.com/ariden83/fizz-buzz/internal/metrics"
 	"context"
 	"github.com/juju/errors"
 	promhttp "github.com/prometheus/client_golang/prometheus/promhttp"
