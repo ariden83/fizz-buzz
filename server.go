@@ -15,6 +15,7 @@ import (
 	"github.com/urfave/negroni"
 	"go.uber.org/zap"
 	"io/ioutil"
+	"net/http/pprof"
 	"os"
 	"strings"
 	"time"
@@ -87,12 +88,14 @@ func (s *Server) startSwaggerServer(stop chan error) {
 		return
 	}
 	mux := http.NewServeMux()
+
 	n := negroni.New()
 	n.Use(negroni.NewStatic(http.Dir(rootDir + "/swagger")))
 	n.UseHandler(mux)
-	addr := fmt.Sprintf("%s:%d", s.conf.Swagger.Host, s.conf.Swagger.Port)
+
+	address := fmt.Sprintf("%s:%d", s.conf.Swagger.Host, s.conf.Swagger.Port)
 	s.swaggerServer = &http.Server{
-		Addr:           addr,
+		Addr:           address,
 		Handler:        n,
 		ReadTimeout:    time.Duration(s.conf.Healthz.ReadTimeout) * time.Second,
 		WriteTimeout:   time.Duration(s.conf.Healthz.WriteTimeout) * time.Second,
@@ -100,7 +103,7 @@ func (s *Server) startSwaggerServer(stop chan error) {
 		MaxHeaderBytes: 1 << 12,
 	}
 	go func() {
-		s.log.Info("Listening HTTP for swagger route", zap.String("address", addr))
+		s.log.Info("Listening HTTP for swagger route", zap.String("address", address))
 		if err := s.swaggerServer.ListenAndServe(); err != nil {
 			s.log.Fatal("StartServer", zap.Error(err))
 			stop <- errors.Annotate(err, "cannot start swagger server")
@@ -145,6 +148,7 @@ func (s *Server) startMetricsServer(stop chan error) {
 	})
 
 	mux.Handle("/metrics", promhttp.Handler())
+	s.PProf(mux)
 
 	addr := fmt.Sprintf("%s:%d", s.conf.Metrics.Host, s.conf.Metrics.Port)
 	s.metricsServer = &http.Server{
@@ -161,4 +165,18 @@ func (s *Server) startMetricsServer(stop chan error) {
 			stop <- errors.Annotate(err, "cannot start healthz server")
 		}
 	}()
+}
+
+func (s *Server) PProf(mux *http.ServeMux) {
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.Handle("/debug/pprof/allocs", pprof.Handler("allocs"))
+	mux.Handle("/debug/pprof/heap", pprof.Handler("heap"))
+	mux.Handle("/debug/pprof/mutex", pprof.Handler("mutex"))
+	mux.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
+	mux.Handle("/debug/pprof/block", pprof.Handler("block"))
+	mux.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
+	mux.Handle("/debug/pprof/trace", pprof.Handler("trace"))
 }

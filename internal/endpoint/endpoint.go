@@ -50,10 +50,6 @@ type Option func(e *Endpoint)
 
 func New(input EndPointInput, opts ...Option) *Endpoint {
 
-	if input.Config.CacheSize < 10 {
-		input.Config.CacheSize = 10
-	}
-
 	e := &Endpoint{
 		log:        input.Log.With(zap.String("component", "http")),
 		metrics:    input.Metrics,
@@ -76,12 +72,12 @@ func WithXCache() Option {
 		var err error
 
 		s.xcache, err = xcache.New(
-			xcache.WithSize(int32(s.conf.CacheSize)),
-			xcache.WithTTL(time.Duration(s.conf.CacheTTL)*time.Second),
-			xcache.WithNegSize(int32(s.conf.NegCacheSize)),
-			xcache.WithNegTTL(time.Duration(s.conf.NegCacheTTL)*time.Second),
+			xcache.WithSize(int32(s.conf.Cache.Size)),
+			xcache.WithTTL(time.Duration(s.conf.Cache.TTL)*time.Second),
+			xcache.WithNegSize(int32(s.conf.Cache.NegSize)),
+			xcache.WithNegTTL(time.Duration(s.conf.Cache.NegTTL)*time.Second),
 			xcache.WithStale(true),
-			xcache.WithPruneSize(int32(s.conf.CacheSize/20)+1))
+			xcache.WithPruneSize(int32(s.conf.Cache.Size/20)+1))
 
 		if err != nil {
 			s.log.Error("fail to init xcache", zap.Error(err))

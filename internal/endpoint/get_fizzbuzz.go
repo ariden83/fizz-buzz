@@ -89,47 +89,46 @@ type getFizzBuzzParams struct {
 //        404: genericError
 //        412: genericError
 //        500: genericError
-func (m *Endpoint) GetFizzBuzz(w http.ResponseWriter, r *http.Request, _ map[string]string) {
+func (e *Endpoint) GetFizzBuzz(w http.ResponseWriter, r *http.Request, _ map[string]string) {
 	params := getFizzBuzzParams{}
-	if err := m.checkRequest(&params, r); err != nil {
-		m.fail(http.StatusPreconditionFailed, err, w, r)
+	if err := e.checkRequest(&params, r); err != nil {
+		e.fail(http.StatusPreconditionFailed, err, w, r)
 		return
 	}
 
-	defer m.IncMetrics(params)
+	defer e.IncMetrics(params)
 
-	if m.xcache != nil {
+	if e.xcache != nil && e.conf.Cache.Active {
 		cacheKey := fmt.Sprintf("%v", params)
-		item, err := m.xcache.Fetch(cacheKey, func() (interface{}, bool, error) {
+		item, err := e.xcache.Fetch(cacheKey, func() (interface{}, bool, error) {
 			ch := make(chan string, 1)
-			go m.convert(ch, params)
-			return m.formatEntireStringResp(ch, params.isJSON), true, nil
+			go e.convert(ch, params)
+			return e.formatEntireStringResp(ch, params.isJSON), true, nil
 		})
 
 		if err != nil {
-			m.log.Error("Fail to get cache", zap.Error(err))
-
-			m.fail(http.StatusInternalServerError, err, w, r)
+			e.log.Error("Fail to get cache", zap.Error(err))
+			e.fail(http.StatusInternalServerError, err, w, r)
 		}
 
 		resp, _ := item.([]byte)
 		if _, err := w.Write(resp); err != nil {
-			m.log.Error("Fail to Write response in http.ResponseWriter", zap.Error(err))
-			m.fail(http.StatusInternalServerError, err, w, r)
+			e.log.Error("Fail to Write response in http.ResponseWriter", zap.Error(err))
+			e.fail(http.StatusInternalServerError, err, w, r)
 		}
 		return
 	}
 
 	ch := make(chan string, 1)
-	go m.convert(ch, params)
-	m.formatResp(w, r, params, ch)
+	go e.convert(ch, params)
+	e.formatResp(w, r, params, ch)
 }
 
-func (m *Endpoint) IncMetrics(p getFizzBuzzParams) {
-	m.metrics.ApiParamsCounter.WithLabelValues(strconv.Itoa(p.Limit), strconv.Itoa(p.NBOne), strconv.Itoa(p.NBTwo), p.StrOne, p.StrTwo).Inc()
+func (e *Endpoint) IncMetrics(p getFizzBuzzParams) {
+	e.metrics.ApiParamsCounter.WithLabelValues(strconv.Itoa(p.Limit), strconv.Itoa(p.NBOne), strconv.Itoa(p.NBTwo), p.StrOne, p.StrTwo).Inc()
 }
 
-func (m *Endpoint) checkRequest(p *getFizzBuzzParams, r *http.Request) error {
+func (e *Endpoint) checkRequest(p *getFizzBuzzParams, r *http.Request) error {
 	var (
 		err error
 		q   url.Values = r.URL.Query()
@@ -140,8 +139,8 @@ func (m *Endpoint) checkRequest(p *getFizzBuzzParams, r *http.Request) error {
 		if err != nil {
 			return fmt.Errorf("invalid integer for p nbOne %s", q.Get("nbOne"))
 		}
-		if p.NBOne > m.conf.Parameters.MaxNb {
-			return fmt.Errorf("maximum size exceeded for p NBOne %s, max %d", q.Get("nbOne"), m.conf.Parameters.MaxNb)
+		if p.NBOne > e.conf.Parameters.MaxNb {
+			return fmt.Errorf("maximum size exceeded for p NBOne %s, max %d", q.Get("nbOne"), e.conf.Parameters.MaxNb)
 		}
 		if p.NBOne == 0 {
 			return fmt.Errorf("NBOne peter must be greater than zero")
@@ -153,8 +152,8 @@ func (m *Endpoint) checkRequest(p *getFizzBuzzParams, r *http.Request) error {
 		if err != nil {
 			return fmt.Errorf("invalid integer for p NBTwo %s", q.Get("nbTwo"))
 		}
-		if p.NBTwo > m.conf.Parameters.MaxNb {
-			return fmt.Errorf("maximum size exceeded for p NBTwo %s, max %d", q.Get("nbTwo"), m.conf.Parameters.MaxNb)
+		if p.NBTwo > e.conf.Parameters.MaxNb {
+			return fmt.Errorf("maximum size exceeded for p NBTwo %s, max %d", q.Get("nbTwo"), e.conf.Parameters.MaxNb)
 		}
 		if p.NBTwo == 0 {
 			return fmt.Errorf("NBTwo peter must be greater than zero")
@@ -169,19 +168,19 @@ func (m *Endpoint) checkRequest(p *getFizzBuzzParams, r *http.Request) error {
 		if p.Limit < 1 {
 			return fmt.Errorf("limit peter must be greater zero")
 		}
-		if p.Limit > m.conf.Parameters.MaxLimit {
-			return fmt.Errorf("maximum size exceeded for p limit %s, max %d", q.Get("limit"), m.conf.Parameters.MaxLimit)
+		if p.Limit > e.conf.Parameters.MaxLimit {
+			return fmt.Errorf("maximum size exceeded for p limit %s, max %d", q.Get("limit"), e.conf.Parameters.MaxLimit)
 		}
 	}
 
 	p.StrOne = q.Get("strOne")
-	if len(p.StrOne) > m.conf.Parameters.MaxStrChar {
-		return fmt.Errorf("maximum char exceeded %s, max %d", p.StrOne, m.conf.Parameters.MaxStrChar)
+	if len(p.StrOne) > e.conf.Parameters.MaxStrChar {
+		return fmt.Errorf("maximum char exceeded %s, max %d", p.StrOne, e.conf.Parameters.MaxStrChar)
 	}
 
 	p.StrTwo = q.Get("strTwo")
-	if len(p.StrTwo) > m.conf.Parameters.MaxStrChar {
-		return fmt.Errorf("maximum char exceeded %s, max %d", p.StrTwo, m.conf.Parameters.MaxStrChar)
+	if len(p.StrTwo) > e.conf.Parameters.MaxStrChar {
+		return fmt.Errorf("maximum char exceeded %s, max %d", p.StrTwo, e.conf.Parameters.MaxStrChar)
 	}
 
 	p.isJSON = strings.Index(r.Header.Get("Content-Type"), ContentTypeJSON) != -1

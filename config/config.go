@@ -44,18 +44,21 @@ type Healthz struct {
 	WriteTimeout time.Duration `config:"healthz_write_timeout"`
 }
 
+type Cache struct {
+	Size            int  `config:"cache_size"`
+	TTL             int  `config:"cache_ttl"`
+	MaxSizeAccepted int  `config:"cache_max_sized_accepted"`
+	NegSize         int  `config:"cache_neg_size"`
+	NegTTL          int  `config:"cache_neg_tll"`
+	Active          bool `config:"cache_active"`
+}
+
 type Config struct {
 	Name      string
 	Port      int
 	Env       string `config:"env"`
 	Host      string
 	PublicURL string `config:"public_url"`
-
-	CacheSize            int
-	CacheTTL             int
-	CacheMaxSizeAccepted int
-	NegCacheSize         int
-	NegCacheTTL          int
 
 	CallHTTPTimeout time.Duration `config:"call_http_timeout"`
 	APIReadTimeout  time.Duration `config:"api_read_timeout"`
@@ -70,6 +73,8 @@ type Config struct {
 	Metrics
 
 	Swagger
+
+	Cache
 }
 
 func getDefaultConfig() *Config {
@@ -81,19 +86,13 @@ func getDefaultConfig() *Config {
 		APIReadTimeout:  4,
 		APIWriteTimeout: 100,
 
-		CacheSize:            5000,
-		CacheTTL:             60,
-		CacheMaxSizeAccepted: 60000,
-		NegCacheSize:         500,
-		NegCacheTTL:          30,
-
 		Healthz: Healthz{
 			ReadTimeout:  10,
 			WriteTimeout: 10,
 		},
 
 		Parameters: Parameters{
-			MaxLimit:   5000,
+			MaxLimit:   10000,
 			MaxNb:      100,
 			MaxStrChar: 20,
 		},
@@ -118,6 +117,15 @@ func getDefaultConfig() *Config {
 			Port: 8081,
 			Host: "127.0.0.1",
 		},
+
+		Cache: Cache{
+			Size:            5000,
+			TTL:             60,
+			MaxSizeAccepted: 60000,
+			NegSize:         500,
+			NegTTL:          30,
+			Active:          true,
+		},
 	}
 }
 
@@ -140,6 +148,10 @@ func New() *Config {
 	err := loader.Load(context.Background(), cfg)
 	if err != nil {
 		panic(err)
+	}
+
+	if cfg.Cache.Size < 10 {
+		cfg.Cache.Size = 10
 	}
 
 	fmt.Println(fmt.Sprintf("%+v", cfg))
