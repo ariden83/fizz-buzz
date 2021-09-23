@@ -28,11 +28,11 @@
 package main
 
 import (
+	"context"
+	"fmt"
 	"github.com/ariden83/fizz-buzz/config"
 	"github.com/ariden83/fizz-buzz/internal/metrics"
 	"github.com/ariden83/fizz-buzz/internal/zap-graylog/logger"
-	"context"
-	"fmt"
 	"os/signal"
 	"time"
 	// _ "github.com/go-swagger/go-swagger/cmd/swagger"

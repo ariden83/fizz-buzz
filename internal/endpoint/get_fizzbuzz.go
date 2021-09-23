@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type Resp string
@@ -98,27 +97,29 @@ func (m *Endpoint) GetFizzBuzz(w http.ResponseWriter, r *http.Request, _ map[str
 	}
 
 	defer m.IncMetrics(params)
-	if m.cache != nil {
+
+	if m.xcache != nil {
 		cacheKey := fmt.Sprintf("%v", params)
-		resp := m.cache.Fetch(cacheKey, func() []byte {
+		item, err := m.xcache.Fetch(cacheKey, func() (interface{}, bool, error) {
 			ch := make(chan string, 1)
-			go m.convert(ch, p)
-			return m.formatEntireStringResp(ch, p.isJSON)
+			go m.convert(ch, params)
+			return m.formatEntireStringResp(ch, params.isJSON), true, nil
 		})
-		
+
+		if err != nil {
+			m.log.Error("Fail to get cache", zap.Error(err))
+
+			m.fail(http.StatusInternalServerError, err, w, r)
+		}
+
+		resp, _ := item.([]byte)
 		if _, err := w.Write(resp); err != nil {
 			m.log.Error("Fail to Write response in http.ResponseWriter", zap.Error(err))
 			m.fail(http.StatusInternalServerError, err, w, r)
 		}
+		return
 	}
-	
-	ch := make(chan string, 1)
-	go m.convert(ch, params)
-	m.formatResp(w, r, params, ch)
-}
 
-
-func (m *Endpoint) generateResponse (w http.ResponseWriter, r *http.Request, p getFizzBuzzParams) {
 	ch := make(chan string, 1)
 	go m.convert(ch, params)
 	m.formatResp(w, r, params, ch)

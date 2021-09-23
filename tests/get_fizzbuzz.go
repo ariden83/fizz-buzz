@@ -1,10 +1,10 @@
 package tests
 
 import (
-	"github.com/ariden83/fizz-buzz/internal/catcher"
-	"github.com/ariden83/fizz-buzz/internal/endpoint"
 	"encoding/json"
 	"fmt"
+	"github.com/ariden83/fizz-buzz/internal/catcher"
+	"github.com/ariden83/fizz-buzz/internal/endpoint"
 	"io/ioutil"
 	"net/http"
 	"strings"

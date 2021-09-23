@@ -1,12 +1,12 @@
 package main
 
 import (
+	"fmt"
 	"github.com/ariden83/fizz-buzz/benches"
 	"github.com/ariden83/fizz-buzz/config"
 	httpEndpoint "github.com/ariden83/fizz-buzz/internal/endpoint"
 	"github.com/ariden83/fizz-buzz/internal/metrics"
 	"github.com/ariden83/fizz-buzz/internal/zap-graylog/logger"
-	"fmt"
 	"go.uber.org/zap"
 	"testing"
 )
@@ -46,7 +46,7 @@ func setUpBench() *benches.Tests {
 		Config:  conf,
 		Log:     l,
 		Metrics: m,
-	})
+	}, httpEndpoint.WithXCache())
 	tts := &benches.Tests{
 		Conf:          conf,
 		HTTPEndRouter: httpHpt.LoadHttpTreeMux(),

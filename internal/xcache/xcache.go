@@ -215,6 +215,7 @@ func New(opts ...Option) (*Cache, error) {
 	// for async stale fetch
 	c.fetchQueue = make(chan fetchReq, c.staleQueueSize)
 	c.queued = make(map[string]struct{})
+
 	for i := 0; i < c.staleFetchers; i++ {
 		go c.staleFetcher()
 	}

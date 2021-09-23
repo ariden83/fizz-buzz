@@ -1,11 +1,11 @@
 package main
 
 import (
+	"fmt"
 	"github.com/ariden83/fizz-buzz/config"
 	"github.com/ariden83/fizz-buzz/internal/metrics"
 	"github.com/ariden83/fizz-buzz/internal/zap-graylog/logger"
 	"github.com/ariden83/fizz-buzz/tests"
-	"fmt"
 	"go.uber.org/zap"
 	"testing"
 	"time"

@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/ariden83/fizz-buzz/config"
-	httpEndpoint "ariden/fizz-buzz/internal/endpoint"
-	"github.com/ariden83/fizz-buzz/internal/metrics"
 	"context"
+	"github.com/ariden83/fizz-buzz/config"
+	httpEndpoint "github.com/ariden83/fizz-buzz/internal/endpoint"
+	"github.com/ariden83/fizz-buzz/internal/metrics"
 	"github.com/juju/errors"
 	promhttp "github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/negroni"
@@ -41,7 +41,7 @@ func (s *Server) startHTTPServer(stop chan error) {
 			Config:  s.conf,
 			Log:     s.log,
 			Metrics: s.metrics,
-		})
+		}, httpEndpoint.WithXCache())
 		if err := s.httpServer.Listen(fmt.Sprintf("%s:%d", s.conf.Host, s.conf.Port)); err != nil {
 			stop <- errors.Annotate(err, "cannot start server HTTP")
 		}

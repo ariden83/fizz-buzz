@@ -1,14 +1,14 @@
 package endpoint
 
 import (
+	"context"
 	"github.com/ariden83/fizz-buzz/config"
 	"github.com/ariden83/fizz-buzz/internal/metrics"
 	middle "github.com/ariden83/fizz-buzz/internal/middleware"
+	"github.com/ariden83/fizz-buzz/internal/xcache"
 	"github.com/ariden83/fizz-buzz/internal/zap-graylog/logger"
-	"context"
 	"github.com/dimfeld/httptreemux"
 	"github.com/gofrs/uuid"
-	"github.com/ariden83/fizz-buzz/internal/xcache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/urfave/negroni"
@@ -20,17 +20,17 @@ import (
 )
 
 type Endpoint struct {
-	log                  *zap.Logger
-	metrics              *metrics.Metrics
-	conf                 *config.Config
-	server               *http.Server
-	fetching             map[string]struct{}
-	cache                *xcache.Cache // cache for valid entries
-	queuedLock           sync.Mutex
-	queued               map[string]struct{}
-	fetchQueue           chan string
-	fetchLock            sync.Mutex
-	fetchCond            *sync.Cond
+	log        *zap.Logger
+	metrics    *metrics.Metrics
+	conf       *config.Config
+	server     *http.Server
+	fetching   map[string]struct{}
+	xcache     *xcache.Cache // cache for valid entries
+	queuedLock sync.Mutex
+	queued     map[string]struct{}
+	fetchQueue chan string
+	fetchLock  sync.Mutex
+	fetchCond  *sync.Cond
 }
 
 const (
@@ -45,37 +45,44 @@ type EndPointInput struct {
 	Metrics *metrics.Metrics
 }
 
-func New(input EndPointInput) *Endpoint {
+// Option is the type of option passed to the constructor.
+type Option func(e *Endpoint)
+
+func New(input EndPointInput, opts ...Option) *Endpoint {
 
 	if input.Config.CacheSize < 10 {
 		input.Config.CacheSize = 10
 	}
 
 	e := &Endpoint{
-		log:                  input.Log.With(zap.String("component", "http")),
-		metrics:              input.Metrics,
-		conf:                 input.Config,
+		log:        input.Log.With(zap.String("component", "http")),
+		metrics:    input.Metrics,
+		conf:       input.Config,
 		fetchQueue: make(chan string, 1000),
 		fetching:   make(map[string]struct{}),
 		queued:     make(map[string]struct{}),
 	}
 	e.fetchCond = sync.NewCond(&e.fetchLock)
-	
-	
+
+	for _, o := range opts {
+		o(e)
+	}
+
 	return e
 }
 
 func WithXCache() Option {
 	return func(s *Endpoint) {
 		var err error
-		s.cache, err = xcache.New(
-			xcache.WithSize(int32(s.conf.CacheSize)), 
-			xcache.WithTTL(time.Duration(c.CacheTTL) * time.Second),
-			xcache.WithNegSize(int32(c.NegCacheSize)), 
-			xcache.WithNegTTL(time.Duration(c.NegCacheTTL) * time.Second),
-			xcache.WithStale(true), 
-			xcache.WithPruneSize(int32(c.CacheSize/20)+1))
-		
+
+		s.xcache, err = xcache.New(
+			xcache.WithSize(int32(s.conf.CacheSize)),
+			xcache.WithTTL(time.Duration(s.conf.CacheTTL)*time.Second),
+			xcache.WithNegSize(int32(s.conf.NegCacheSize)),
+			xcache.WithNegTTL(time.Duration(s.conf.NegCacheTTL)*time.Second),
+			xcache.WithStale(true),
+			xcache.WithPruneSize(int32(s.conf.CacheSize/20)+1))
+
 		if err != nil {
 			s.log.Error("fail to init xcache", zap.Error(err))
 		}

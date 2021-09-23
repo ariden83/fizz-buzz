@@ -1,9 +1,9 @@
 package tests
 
 import (
-	"github.com/ariden83/fizz-buzz/config"
 	"encoding/json"
 	"fmt"
+	"github.com/ariden83/fizz-buzz/config"
 	"github.com/pkg/errors"
 	"io/ioutil"
 	"net/http"
